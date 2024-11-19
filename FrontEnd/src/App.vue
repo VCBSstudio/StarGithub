@@ -4,42 +4,38 @@ import { RouterLink, RouterView } from 'vue-router'
 
 <template>
   <header>
-    <div class="wrapper">
-      <div class="content">
-         这个是头部内容
+    <div class="content">
+       <img src="https://gitstar.com.cn/static/img/logo_white.png" class="style-img" />
       </div>
-    </div>
   </header>
-
-  <!-- <RouterView /> -->
 </template>
 
 <style scoped>
+
 header {
-  line-height: 1.5;
-  max-height: 100vh;
+  height: 70px;
+  background: green;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+header .content {
   width: 100%;
+  max-width: 1200px;
+  min-width: 1024px;
+  margin: 0 auto;
+  background: red;
+  height: 70px;
+  /* align-content: center;
+   */
+   justify-content: center;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    background-color: red;
-    height: 70px;
-  }
-
-  header .wrapper {
-    /* display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap; */
-  }
-
-  header .content {
-    display: flex;
-    flex-direction: row;
-    background-color: green;
-    height: 70px;
-  }
-
+header .style-img {
+  width: 60px;
+  height: 60px;
+  background: purple;
 }
+
 </style>
