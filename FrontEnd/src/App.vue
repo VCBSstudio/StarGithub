@@ -1,64 +1,72 @@
 <script setup lang="ts">
-import { ElMessage } from 'element-plus';
-import { useRoute } from 'vue-router'; // 导入 useRoute
-import router from './router';
+import { ElMessage } from 'element-plus'
+import { useRoute } from 'vue-router' // 导入 useRoute
+import router from './router'
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-
 interface Tab {
-  name: string;
-  label: string;
-  content: string;
-  loaded: boolean;
-  data: Array<{ id: number; name: string }>;
+  name: string
+  label: string
+  content: string
+  loaded: boolean
+  data: Array<{ id: number; name: string }>
 }
 
 // GitHub OAuth 配置
-const CLIENT_SECRET="86e5be880237a24cacd0760070287963e92d3cf5"
-const clientId = '30c256b4116d1f32fc2a'; // 你从 GitHub 获取的 Client ID
-const redirectUri = "http://localhost:5173";; // OAuth 回调地址，通常是你的应用中的某个路径
+const CLIENT_SECRET = '86e5be880237a24cacd0760070287963e92d3cf5'
+const clientId = '30c256b4116d1f32fc2a' // 你从 GitHub 获取的 Client ID
+const redirectUri = 'http://localhost:3000' // OAuth 回调地址，通常是你的应用中的某个路径
 
 // 重定向到 GitHub 授权页面
 const redirectToGitHubAuth = () => {
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user`
   // const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${redirectUri}&scope=read:user user:email`;
-  window.location.href = githubAuthUrl;
+  window.location.href = githubAuthUrl
 }
+
+var user_name = ref('name')
+var avatarImg = ref('https://gitstar.com.cn/static/img/logo_white.png')
 
 const code = ref<string | null>(null)
 onMounted(async () => {
   // 获取当前URL中的查询参数部分
   const params = new URLSearchParams(window.location.search)
-  console.log('window.location.search :', params);
+  console.log('window.location.search :', params)
 
   // 获取指定的查询参数值
   code.value = params.get('code') // 获取 'code' 参数
-  console.log('.code.value :', code.value);
+  console.log('.code.value :', code.value)
   if (code.value) {
     // router.push({ path: '/index' })
-     // 用授权码换取访问令牌
-     const tokenResponse = await axios.post(
-            'https://github.com/login/oauth/access_token',
-            {
-                client_id: clientId,
-                client_secret: CLIENT_SECRET,
-                code: code,
-            },
-            {
-                headers: { Accept: 'application/json' },
-            }
-        );
+    // 用授权码换取访问令牌
+    const tokenResponse = await axios.post(
+      '/login/oauth/access_token',
+      {
+        client_id: clientId,
+        client_secret: CLIENT_SECRET,
+        code: code.value,
+      },
+      {
+        headers: { Accept: 'application/json' },
+      }
+    )
+    console.log('tokenResponse :' + tokenResponse)
+    const accessToken = tokenResponse.data.access_token
+    console.log('accessToken :' + accessToken)
 
-        const accessToken = tokenResponse.data.access_token;
+    // 用访问令牌获取用户信息
+    const userResponse = await axios.get('/githubUser', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
 
-        // 用访问令牌获取用户信息
-        const userResponse = await axios.get('https://api.github.com/user', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-        });
+    const userData = userResponse.data
+    console.log('userData :' + userData)
+    console.log('name: ' + userData.login)
+    console.log('avatar_url: ' + userData.avatar_url)
 
-        const userData = userResponse.data;
-        // console.log('userData :' +  ruserData);
+    user_name.value = userData.login
+    avatarImg.value = userData.avatar_url
   } else {
     ElMessage.error('获取code失败，请重新登录')
   }
@@ -73,10 +81,10 @@ const tabs = ref<Tab[]>([
   { name: 'fifth', label: 'Fork记录', content: '', loaded: false, data: [] },
   { name: 'sixth', label: 'Follow记录', content: '', loaded: false, data: [] },
   { name: 'seventh', label: '失信名单', content: '', loaded: false, data: [] },
-]);
+])
 
 // 当前激活的选项卡 name
-const activeName = ref<string>(tabs.value[0].name);
+const activeName = ref<string>(tabs.value[0].name)
 
 // 模拟加载数据函数
 const loadData = (tab: Tab) => {
@@ -85,35 +93,32 @@ const loadData = (tab: Tab) => {
       resolve([
         { id: 1, name: `${tab.label} - 数据1` },
         { id: 2, name: `${tab.label} - 数据2` },
-      ]);
-    }, 1000);
-  });
-};
+      ])
+    }, 1000)
+  })
+}
 
 // 点击选项卡事件处理
 const handleClick = async (tabInstance: any) => {
-  const name = tabInstance.props.name; // 通过 props 访问 name
-  console.log('当前点击的选项卡 name:', name);
+  const name = tabInstance.props.name // 通过 props 访问 name
+  console.log('当前点击的选项卡 name:', name)
 
   // 查找对应的 Tab 数据
-  const targetTab = tabs.value.find((t) => t.name === name);
+  const targetTab = tabs.value.find((t) => t.name === name)
 
   if (targetTab && !targetTab.loaded) {
-    targetTab.content = `${targetTab.label} - 加载中...`;
+    targetTab.content = `${targetTab.label} - 加载中...`
 
     try {
-      const result = (await loadData(targetTab)) as Array<{ id: number; name: string }>;
-      targetTab.data = result; // 更新数据
-      targetTab.content = ''; // 清空加载中消息
-      targetTab.loaded = true;
+      const result = (await loadData(targetTab)) as Array<{ id: number; name: string }>
+      targetTab.data = result // 更新数据
+      targetTab.content = '' // 清空加载中消息
+      targetTab.loaded = true
     } catch (error) {
-      ElMessage.error('加载失败，请重试');
+      ElMessage.error('加载失败，请重试')
     }
   }
-};
-
-
-
+}
 </script>
 
 <template>
@@ -130,8 +135,8 @@ const handleClick = async (tabInstance: any) => {
           <div>App下载</div>
           <div class="login">App登录</div>
           <div class="user-info" @click="redirectToGitHubAuth">
-            <div class="name">name</div>
-            <img src="https://gitstar.com.cn/static/img/logo_white.png" class="user-avatar" />
+            <div class="name">{{ user_name }}</div>
+            <img :src="avatarImg" class="user-avatar" />
           </div>
         </div>
       </div>
@@ -142,12 +147,7 @@ const handleClick = async (tabInstance: any) => {
           <div class="banner-wraper">Banner 内容</div>
           <div class="action-list-wrapper">
             <el-tabs v-model="activeName" @tab-click="handleClick">
-              <el-tab-pane
-                v-for="tab in tabs"
-                :key="tab.name"
-                :label="tab.label"
-                :name="tab.name"
-              >
+              <el-tab-pane v-for="tab in tabs" :key="tab.name" :label="tab.label" :name="tab.name">
                 <div v-if="tab.content">{{ tab.content }}</div>
                 <el-table v-else :data="tab.data" style="width: 100%">
                   <el-table-column prop="id" label="ID" width="100" />
